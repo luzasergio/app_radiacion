@@ -95,7 +95,7 @@ def on_calcular_rad():
     calcular_valor_medio('febrero', df)
 
     print(rad_med_mensual)
-    hoja_resultados.insert('1.0', f'El valor de radiación para \n el mes de enero es: {rad_med_mensual}')
+    hoja_resultados.insert('1.0', f'El valor de radiación para \n el mes de {dic_meses[mes_var.get()]} es: {rad_med_mensual}')
 
     #plt.plot(df.index, df.CR1000)
 
