@@ -14,7 +14,7 @@ import pandas as pd
 root= tk.Tk()
 root.title('Aplicación para el cálculo de la radiación diaria')
 root.resizable(False, False)
-root.geometry('450x200')
+root.geometry('450x300')
 
 root.columnconfigure(0, weight=1) #Define que sólo voy a tener una columna y que se va a expandir si se redimensiona la app
 
@@ -26,10 +26,17 @@ ttk.Label(
 
 #------------------------ Definición de variables globales ----------------------
 
+#Creo un diccionario para asignarle valor al mes
+dic_meses= {'enero':1, 'febrero':2, 'marzo':3, 'abril':4, 'mayo':5, 'junio':6,
+        'julio':7, 'agosto':8, 'septiembre':9, 'octubre':10, 'noviembre':11, 'diciembre':12}
+
 mes_var= tk.StringVar(value='') #Variable donde guardar el mes en el que voy a calcular la radiación
 
 #ruta_archivo= tk.StringVar(value='')
 ruta_archivo= list()
+
+#Valor medio de radiación para un dado mes
+rad_med_mensual= tk.DoubleVar()
 
 #--------------------------- Definición de funciones ---------------------------
 
@@ -83,9 +90,25 @@ def on_calcular_rad():
                     skiprows=4, index_col=0, parse_dates=True))
 
     df= pd.concat(df_list, axis=0)
-    print(df.head())
+    print(df.count())
 
-    plt.plot(df.index, df.CR1000)
+    calcular_valor_medio('febrero', df)
+
+    print(rad_med_mensual)
+    hoja_resultados.insert('1.0', f'El valor de radiación para \n el mes de enero es: {rad_med_mensual}')
+
+    #plt.plot(df.index, df.CR1000)
+
+#Quiero definir una función que dado un data frame y un mes dado, calcule la media diaria
+
+def calcular_valor_medio(mes, dataframe):
+    global rad_med_mensual
+
+    #Esta línea debería seleccionar del dataframe los valores correspondientes a un mes de datos
+    df= dataframe[pd.DatetimeIndex(dataframe.index).month==dic_meses[mes]]
+
+    rad_med_mensual= df.CR1000.sum() #Calcula y guarda la radiación media en una variable
+    
 
 #-------------------------- Marco de trabajo principal ------------------------
 
@@ -117,13 +140,24 @@ frame_rad.grid(sticky=(tk.W + tk.E))
 for i in range(3):
     frame_rad.columnconfigure(i, weight=1)
 
-meses= ['enero', 'febrero', 'marzo']
-ttk.Combobox(frame_rad, values= meses, textvariable= mes_var).grid(row=0, column=0)
+
+ttk.Combobox(frame_rad, values= list(dic_meses.keys()), textvariable= mes_var).grid(row=0, column=0)
 ttk.Label(frame_rad, text='Seleccionar mes').grid(row=1, column=0)
 
 ttk.Button(frame_rad, text= 'Calcular radiación diaria', command= on_calcular_rad).grid(row=0, column=1)
 
 ttk.Button(frame_rad, text= 'Ver gráfico para').grid(row=0, column=2)
+
+
+#-------------------------- Marco de presentación de resultados ------------------------
+
+
+ttk.Label(frame_principal, text= "Resultados").grid(sticky=(tk.W + tk.E))
+
+hoja_resultados= tk.Text(frame_principal, width=25, height=10)
+hoja_resultados.grid(sticky=(tk.W + tk.E))
+
+
 
 
 #Correr programa
