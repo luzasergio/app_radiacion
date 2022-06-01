@@ -14,7 +14,7 @@ import pandas as pd
 root= tk.Tk()
 root.title('Aplicación para el cálculo de la radiación diaria')
 root.resizable(False, False)
-root.geometry('450x300')
+root.geometry('550x400')
 
 root.columnconfigure(0, weight=1) #Define que sólo voy a tener una columna y que se va a expandir si se redimensiona la app
 
@@ -30,7 +30,7 @@ ttk.Label(
 dic_meses= {'enero':1, 'febrero':2, 'marzo':3, 'abril':4, 'mayo':5, 'junio':6,
         'julio':7, 'agosto':8, 'septiembre':9, 'octubre':10, 'noviembre':11, 'diciembre':12}
 
-mes_var= tk.StringVar(value='') #Variable donde guardar el mes en el que voy a calcular la radiación
+mes_var= tk.StringVar(value='') # Variable donde guardar el mes en el que voy a calcular la radiación
 
 #ruta_archivo= tk.StringVar(value='')
 ruta_archivo= list()
@@ -92,10 +92,10 @@ def on_calcular_rad():
     df= pd.concat(df_list, axis=0)
     print(df.count())
 
-    calcular_valor_medio('febrero', df)
+    calcular_valor_medio(mes_var.get(), df)
 
     print(rad_med_mensual)
-    hoja_resultados.insert('1.0', f'El valor de radiación para \n el mes de {dic_meses[mes_var.get()]} es: {rad_med_mensual}')
+    hoja_resultados.insert('1.0', f'El valor de radiación para \n el mes de {mes_var.get()} es: {rad_med_mensual}')
 
     #plt.plot(df.index, df.CR1000)
 
@@ -108,7 +108,7 @@ def calcular_valor_medio(mes, dataframe):
     df= dataframe[pd.DatetimeIndex(dataframe.index).month==dic_meses[mes]]
 
     rad_med_mensual= df.CR1000.sum() #Calcula y guarda la radiación media en una variable
-    
+        
 
 #-------------------------- Marco de trabajo principal ------------------------
 
@@ -117,7 +117,7 @@ frame_principal.grid(padx=10, sticky=(tk.E + tk.W))
 frame_principal.columnconfigure(0, weight=1)
 
 
-#-------------------------- Marco de selección de archivos ------------------------
+#-------------------------- Marco de selección de datos ------------------------
 
 sel_archivos = ttk.LabelFrame(frame_principal, text='Selección de archivos')
 sel_archivos.grid(sticky=(tk.W + tk.E))
@@ -127,9 +127,9 @@ for i in range(3):
 
 ttk.Button(sel_archivos, text='Agregar archivos', command= on_select_file).grid(row=0, column=0)
 
-ttk.Button(sel_archivos, text='Reset', command= on_reset_file).grid(row=0, column=1)
+ttk.Button(sel_archivos, text='Ver archivos', command= on_ver_archivos).grid(row=0, column=1)
 
-ttk.Button(sel_archivos, text='Ver archivos', command= on_ver_archivos).grid(row=0, column=2)
+ttk.Button(sel_archivos, text='Seleccionar estación').grid(row=0, column=2)
 
 
 #-------------------------- Marco para cálculos de radiación ------------------------
@@ -144,7 +144,9 @@ for i in range(3):
 ttk.Combobox(frame_rad, values= list(dic_meses.keys()), textvariable= mes_var).grid(row=0, column=0)
 ttk.Label(frame_rad, text='Seleccionar mes').grid(row=1, column=0)
 
-ttk.Button(frame_rad, text= 'Calcular radiación diaria', command= on_calcular_rad).grid(row=0, column=1)
+boton_rad_diaria= ttk.Button(frame_rad, text= 'Calcular radiación diaria', command= on_calcular_rad,
+           state='disabled')
+boton_rad_diaria.grid(row=0, column=1)
 
 ttk.Button(frame_rad, text= 'Ver gráfico para').grid(row=0, column=2)
 
@@ -156,6 +158,27 @@ ttk.Label(frame_principal, text= "Resultados").grid(sticky=(tk.W + tk.E))
 
 hoja_resultados= tk.Text(frame_principal, width=25, height=10)
 hoja_resultados.grid(sticky=(tk.W + tk.E))
+
+#-------------------------- Boton Reset y Save ------------------------
+
+ttk.Button(frame_principal, text='Reset', command= on_reset_file).grid(sticky=tk.E)
+
+#------------------ Funciones para las cuáles primero necesito el widget --------------
+
+def habilitar_boton_rad(*args): #No entiendo porque preciso poner *args
+    """Habilita el boton de calculo de radiación una vez que se selecciono el mes"""
+    global mes_var
+    
+    if mes_var.get() != '':
+        boton_rad_diaria.config(state='enabled')
+        
+#Quiero agregar un seguimiento a la variable mes_var para activar el botón de calcular radiación
+mes_var.trace("w", habilitar_boton_rad)
+
+#Quiero definir una función que ponga en cero diferentes variables
+def reset():
+    """Defino esta función para poner en cero diferentes valores del programa"""
+    hoja_resultados.delete('1.0', tk.END)
 
 
 
