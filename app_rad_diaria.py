@@ -4,8 +4,32 @@ from tkinter import filedialog as fd #Permite la apertura de ventanas emergentes
 from tkinter.messagebox import showinfo
 import matplotlib.pyplot as plt 
 
+import json
 
 import pandas as pd
+
+#-------------------------- Defino una nueva clase de variable de control ------------------------
+
+class ListVar(tk.StringVar):
+    """Una variable tkinter que puede mantener listas,
+        extiende a la clase StringVar"""
+    
+    def __init__(self, *args, **kwargs):
+        kwargs['value'] = json.dumps(kwargs.get('value'))
+        super().__init__(*args, **kwargs)
+    
+    def set(self, value, *args, **kwargs):
+        string = json.dumps(value)
+        super().set(string, *args, **kwargs)
+
+    def get(self, *args, **kwargs):
+        string = super().get(*args, **kwargs)
+        return json.loads(string)
+
+    def append(self, valor):
+        lista= self.get()
+        lista.append(valor)
+        self.set(lista)
 
 
 #-------------------------- Ventana de trabajo principal ------------------------
@@ -33,7 +57,9 @@ dic_meses= {'enero':1, 'febrero':2, 'marzo':3, 'abril':4, 'mayo':5, 'junio':6,
 mes_var= tk.StringVar(value='') # Variable donde guardar el mes en el que voy a calcular la radiación
 
 #ruta_archivo= tk.StringVar(value='')
-ruta_archivo= list()
+#ruta_archivo= list()
+lista_archivos_var= ListVar(value=[])
+
 
 #Valor medio de radiación para un dado mes
 rad_med_mensual= tk.DoubleVar()
@@ -41,7 +67,7 @@ rad_med_mensual= tk.DoubleVar()
 #--------------------------- Definición de funciones ---------------------------
 
 def on_select_file():
-    global ruta_archivo
+    #global ruta_archivo
 
     filetypes = (
         ('text files', '*.csv'),
@@ -57,19 +83,15 @@ def on_select_file():
         title='Fila seleccionada',
         message=filename
     )
-    ruta_archivo.append(filename)
-    print(ruta_archivo)
+    lista_archivos_var.append(filename)
+    
+    print(lista_archivos_var.get())
 
-
-def on_reset_file():
-    global ruta_archivo
-    ruta_archivo = []
-    print(ruta_archivo)
 
 def on_ver_archivos():
-    cant_archivos= len(ruta_archivo)
+    cant_archivos= len(lista_archivos_var.get())
     mensaje= f'Cantidad de archivos: {cant_archivos} \n'
-    for string in ruta_archivo:
+    for string in lista_archivos_var.get():
         mensaje += string + '\n'
 
     showinfo(
@@ -80,12 +102,12 @@ def on_ver_archivos():
 
 def on_calcular_rad():
     """Calcula el valor de la radiación diaria mensual y grafica algunos días"""
-    global ruta_archivo
-    global mes_var
+    #global ruta_archivo
+    #global mes_var
     
     df_list= [] #Creo una lista que puede contener más de un dataframe
 
-    for ruta in ruta_archivo:
+    for ruta in lista_archivos_var.get():
         df_list.append(pd.read_csv(ruta, usecols=[0,2], names=['fechaHora', 'CR1000'],
                     skiprows=4, index_col=0, parse_dates=True))
 
@@ -161,6 +183,17 @@ hoja_resultados.grid(sticky=(tk.W + tk.E))
 
 #-------------------------- Boton Reset y Save ------------------------
 
+def on_reset_file():
+    """Vuelve a cero la selección de archivos, el widget de texto y
+        el mes seleccionado"""
+    #global ruta_archivo
+    lista_archivos_var.set([])
+    
+    hoja_resultados.delete('1.0', tk.END)
+    
+    mes_var.set(value='')
+
+
 ttk.Button(frame_principal, text='Reset', command= on_reset_file).grid(sticky=tk.E)
 
 #------------------ Funciones para las cuáles primero necesito el widget --------------
@@ -169,18 +202,16 @@ def habilitar_boton_rad(*args): #No entiendo porque preciso poner *args
     """Habilita el boton de calculo de radiación una vez que se selecciono el mes"""
     global mes_var
     
-    if mes_var.get() != '':
+    if mes_var.get() == ''  or len(lista_archivos_var.get())== 0:
+        boton_rad_diaria.config(state='disabled')
+    else:
         boton_rad_diaria.config(state='enabled')
-        
 #Quiero agregar un seguimiento a la variable mes_var para activar el botón de calcular radiación
+
+#Necesito usar trace para mes_var y ruta_archivo pero todavía no sé cómo hacerlo
+#para ruta_archivo porque no es una variable de control (supongo que tengo que ver clases)
 mes_var.trace("w", habilitar_boton_rad)
-
-#Quiero definir una función que ponga en cero diferentes variables
-def reset():
-    """Defino esta función para poner en cero diferentes valores del programa"""
-    hoja_resultados.delete('1.0', tk.END)
-
-
+lista_archivos_var.trace("w", habilitar_boton_rad)
 
 
 #Correr programa
